@@ -495,13 +495,11 @@ def check_account(username, password, date):
         }
         login_url = "https://auth.garena.com/api/prelogin"
         response = requests.get(login_url, params=params, cookies=cookies, headers=headers)
-        
+
         if "captcha" in response.text.lower():
             print(f"{RED}[🔴 𝐒𝐓𝐎𝐏] CAPTCHA detected. Please change your VPN or IP and enter again.{RESET}")
-            input("🆘 ᴘʟᴇᴀsᴇ ᴄʜᴀɴɢᴇ ʏᴏᴜʀ ᴠᴘɴ ᴏʀ ɪᴘ ᴀɴᴅ ᴘʀᴇss ᴇɴᴛᴇʀ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ...")  # Pauses and waits for user input
-            
-            # You can also choose to break the loop or return, depending on your logic
-            return "[🔴 𝐒𝐓𝐎𝐏] ᴄᴀᴘᴛᴄʜᴀ ᴅᴇᴛᴇᴄᴛᴇᴅ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ ."
+            input("🆘 ᴘʟᴇᴀsᴇ ᴄʜᴀɴɢᴇ ʏᴏᴜʀ ᴠᴘɴ ᴏʀ ɪᴘ ᴀɴᴅ ᴘʀᴇss ᴇɴᴛᴇʀ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ...")
+            return "[🔴 𝐒𝐓𝐎𝐏] ᴄᴀᴘᴛᴄʜᴀ ᴅᴇᴛᴇᴄᴛᴇᴅ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ."
 
         if response.status_code == 200:
             data = response.json()
@@ -510,17 +508,23 @@ def check_account(username, password, date):
             prelogin_id = data.get('id')
 
             if not all([v1, v2, prelogin_id]):
-                return f"[😢] 𝗔𝗖𝗖𝗢𝗨𝗡𝗧 𝗗𝗜𝗗𝗡'𝗧 𝗘𝗫𝗜𝗦𝗧"            
-            new_datadome = response.cookies.get('datadome', cookies.get('datadome'))           
+                return "[😢] 𝗔𝗖𝗖𝗢𝗨𝗡𝗧 𝗗𝗜𝗗𝗡'𝗧 𝗘𝗫𝗜𝗦𝗧"
+
+            new_datadome = response.cookies.get('datadome', cookies.get('datadome'))
             encrypted_password = getpass(password, v1, v2)
+
             if not new_datadome:
-                return f"[FAILED] Status: Missing updated cookies"            
+                return "[FAILED] Status: Missing updated cookies"
+
             if "error" in data or data.get("error_code"):
                 return f"[FAILED] Status: {data.get('error', 'Unknown error')}"
+
+            # Assuming check_login returns a string with status messages
+            tre = check_login(username, random_id, encrypted_password, password, headers, cookies, new_datadome, date)
+            if "✅ LOGIN SUCCESSFUL" in tre or "[✅]" in tre:
+                return "SUCCESS", tre
             else:
-             #       print("𝗣𝗥𝗘𝗟𝗢𝗚𝗜𝗡 𝗦𝗨𝗖𝗖𝗘𝗦𝗦𝗙𝗨𝗟𝗟𝗬")
-                    tre = check_login(username, random_id, encrypted_password, password, headers, cookies, new_datadome, date)  
-                    return tre
+                return "FAILED", tre
         else:
             return f"[FAILED] HTTP Status: {response.status_code}"
 
