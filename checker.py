@@ -118,8 +118,16 @@ async def bulk_check(file_path, message):
 
             username, password = acc.rsplit(':', 1)
             sys.stdin = io.StringIO("\n")
-            status, result = await asyncio.to_thread(main.check_account, username, password, date)
-            clean = main.strip_ansi_codes_jarell(result)
+            
+            # Safely handle the return of main.check_account
+            result = await asyncio.to_thread(main.check_account, username, password, date)
+            if isinstance(result, tuple) and len(result) == 2:
+                status, output = result
+            else:
+                status = "FAILED"
+                output = str(result)
+            
+            clean = main.strip_ansi_codes_jarell(output)
 
             if status == "SUCCESS":
                 successful_count += 1
