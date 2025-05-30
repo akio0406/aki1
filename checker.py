@@ -10,6 +10,7 @@ from collections import defaultdict
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from dotenv import load_dotenv
+from default_cookie import get_cookies
 
 import main
 
@@ -84,7 +85,7 @@ async def check_file(client, message):
 
     await message.reply("\ud83d\udd0d Running bulk check...")
     # Directly get cookies from main (no need to wait for /sendcookies)
-    cookies = main.get_cookies()  # Assuming main.get_cookies() returns a default or empty dict if no cookie is needed
+    cookies = get_cookies()  # Assuming main.get_cookies() returns a default or empty dict if no cookie is needed
     await bulk_check(file_path, cookies, message)
 
 # Function for bulk checking accounts
