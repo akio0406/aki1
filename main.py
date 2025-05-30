@@ -393,7 +393,6 @@ def show_level(access_token, selected_header, sso, token, newdate, cookie):
         return f"[FAILED] {response.text}"
 
 
-from colorama import Fore, Style
 import html
 
 def format_result(
@@ -407,68 +406,47 @@ def format_result(
     email_ver = "Not Verified" if email_verified == "False" else "Verified"
     avatar_urls = html.escape(avatar_url)
 
-    def box_line(text, width=62):
-        return f"║ {text.ljust(width)} ║"
-
-    def box_title(title, width=62):
-        line = "═" * (width + 2)
-        return f"╔{line}╗\n║ {title.center(width)} ║\n╠{line}╣"
-
-    def box_bottom(width=62):
-        line = "═" * (width + 2)
-        return f"╚{line}╝"
-
-    width = 62
-    header = box_title(f"{Fore.GREEN}✅ LOGIN SUCCESSFUL{Style.RESET_ALL}", width)
-
     account_info = [
-        f"🆔 Account: {Fore.CYAN}{username}:{password}{Style.RESET_ALL}",
-        f"📅 Last Login: {Fore.YELLOW}{last_login}{Style.RESET_ALL}",
-        f"🌐 Last login from: {Fore.YELLOW}{last_login_where}{Style.RESET_ALL}",
-        f"🔍 Last login IP: {Fore.YELLOW}{ipk}{Style.RESET_ALL}",
-        f"🗺️ Last login country: {Fore.YELLOW}{ipc}{Style.RESET_ALL}",
-        f"🏳️ Country: {Fore.CYAN}{country}{Style.RESET_ALL}",
-        f"🐚 Shells: {Fore.RED if shell == 0 else Fore.GREEN}{shell}{Style.RESET_ALL}",
-        f"🖼️ Avatar: {avatar_urls}",
-        f"📱 Mobile No: {Fore.CYAN}{mobile}{Style.RESET_ALL}",
-        f"📧 Email: {Fore.CYAN}{email} ({email_ver}){Style.RESET_ALL}",
-        f"👤 Facebook Username: {Fore.CYAN}{fb}{Style.RESET_ALL}",
-        f"🔗 Facebook Link: {Fore.CYAN}{fbl}{Style.RESET_ALL}",
+        "<b>Account Info:</b>",
+        f"👤 User:\n<code>{username}</code>",
+        f"🔑 Pass:\n<code>{password}</code>",
+        f"📅 Last Login: <code>{last_login}</code>",
+        f"🌐 From: <code>{last_login_where}</code>",
+        f"🔍 IP: <code>{ipk}</code>",
+        f"🗺️ Country (login): <code>{ipc}</code>",
+        f"🏳️ Region: <b>{country}</b>",
+        f"🐚 Shells: <b>{shell}</b>",
+        f"🖼️ Avatar: <a href=\"{avatar_urls}\">[View Avatar]</a>",
+        f"📱 Mobile: <b>{mobile}</b>",
+        f"📧 Email: <b>{email}</b> ({email_ver})",
+        f"👤 Facebook: <b>{fb}</b>",
+        f"🔗 FB Link: <a href=\"{fbl}\">{fbl}</a>" if fbl != "N/A" else "🔗 FB Link: N/A",
     ]
 
     codm_info = connected_games if connected_games else ["No Games Found"]
+    codm_info = [f"🎮 {html.escape(game)}" for game in codm_info]
 
     bind_status = [
-        f"📱 Mobile binded: {Fore.YELLOW if mobile != 'N/A' else Fore.RED}{mobile != 'N/A'}{Style.RESET_ALL}",
-        f"✅ Email verified: {Fore.YELLOW if email_verified == 'True' else Fore.RED}{email_verified}{Style.RESET_ALL}",
-        f"🔗 Facebook Linked: {Fore.CYAN}{facebook}{Style.RESET_ALL}",
-        f"🔐 Authenticator: {Fore.CYAN}{authenticator_enabled}{Style.RESET_ALL}",
-        f"🛡️ 2FA: {Fore.CYAN}{two_step_enabled}{Style.RESET_ALL}",
+        "<b>Bind Status:</b>",
+        f"📱 Mobile binded: <b>{mobile != 'N/A'}</b>",
+        f"✅ Email verified: <b>{email_verified}</b>",
+        f"🔗 Facebook Linked: <b>{facebook}</b>",
+        f"🔐 Authenticator: <b>{authenticator_enabled}</b>",
+        f"🛡️ 2FA: <b>{two_step_enabled}</b>",
     ]
 
-    status_line = f"⚙️ Account Status: {Fore.YELLOW}{clean_status}{Style.RESET_ALL}"
+    status = f"<b>Account Status:</b>\n⚙️ <b>{clean_status}</b>"
+    footer = "🛠️ Checker powered by: <b>Aki's bot</b>"
 
-    footer = f"{Fore.YELLOW}🛠️ Checker powered by: Aki's bot{Style.RESET_ALL}"
-
-    # Build boxed sections
-    box_account = "\n".join(box_line(line, width) for line in account_info)
-    box_codm = "\n".join(box_line(line, width) for line in codm_info)
-    box_bind = "\n".join(box_line(line, width) for line in bind_status)
-
-    msg = (
-        f"{header}\n"
-        f"{box_account}\n"
-        f"╠{'═' * (width + 2)}╣\n"
-        f"{box_line(f'🎮 CODM Info:', width)}\n"
-        f"{box_codm}\n"
-        f"╠{'═' * (width + 2)}╣\n"
-        f"{box_line('📌 Bind Status:', width)}\n"
-        f"{box_bind}\n"
-        f"╠{'═' * (width + 2)}╣\n"
-        f"{box_line(status_line, width)}\n"
-        f"{box_bottom(width)}\n"
-        f"{footer}"
-    )
+    msg = "\n\n".join([
+        "<b>✅ LOGIN SUCCESSFUL</b>",
+        "\n".join(account_info),
+        "<b>CODM Info:</b>",
+        "\n".join(codm_info),
+        "\n".join(bind_status),
+        status,
+        footer
+    ])
 
     return msg
 
