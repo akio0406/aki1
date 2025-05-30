@@ -38,7 +38,7 @@ user_pending_files = {}
 
 # ✅ Redeploy Railway using GraphQL API
 def trigger_railway_redeploy():
-    token = "228d2031-4548-4804-9fdc-32390010c4f5"  # Keep private
+    token = "34f351e1-a27a-4355-9266-d367057c106c"  # Keep private
     project_id = "2e95dc6d-0e0b-4edd-8c51-5ef47df2fe2c"
 
     url = "https://backboard.railway.app/graphql/v2"
