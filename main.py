@@ -528,6 +528,8 @@ def check_account(username, password, date):
         else:
             return f"[FAILED] HTTP Status: {response.status_code}"
 
+    except RuntimeError as e:
+        raise  # Let CAPTCHA_DETECTED go up to checker.py
     except Exception as e:
         return f"[FAILED] {e}"
 
