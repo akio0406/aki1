@@ -38,7 +38,7 @@ user_pending_files = {}
 
 # ✅ Redeploy Railway using GraphQL API
 def trigger_railway_redeploy():
-    token = "228d2031-4548-4804-9fdc-32390010c4f5"  # 🔐 Keep this private
+    token = "228d2031-4548-4804-9fdc-32390010c4f5"  # Keep private
     project_id = "2e95dc6d-0e0b-4edd-8c51-5ef47df2fe2c"
 
     url = "https://backboard.railway.app/graphql/v2"
@@ -61,7 +61,8 @@ def trigger_railway_redeploy():
 
     try:
         response = requests.post(url, headers=headers, json=payload)
-        print(f"[Railway] Redeploy status: {response.status_code}")
+        print(f"[Railway] Status Code: {response.status_code}")
+        print(f"[Railway] Response: {response.text}")
     except Exception as e:
         print(f"[Railway] Failed to redeploy: {e}")
 
