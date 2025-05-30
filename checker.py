@@ -108,7 +108,7 @@ async def bulk_check(file_path, message):
         accounts = infile.readlines()
         await message.reply(f"\ud83d\udccc Loaded {len(accounts)} accounts for checking.")
 
-        for acc in accounts:
+        for i, acc in enumerate(accounts):
             acc = acc.strip()
             if ':' not in acc:
                 failed_count += 1
@@ -118,25 +118,36 @@ async def bulk_check(file_path, message):
 
             username, password = acc.rsplit(':', 1)
             sys.stdin = io.StringIO("\n")
-            
-            # Safely handle the return of main.check_account
+
             result = await asyncio.to_thread(main.check_account, username, password, date)
             if isinstance(result, tuple) and len(result) == 2:
                 status, output = result
             else:
                 status = "FAILED"
                 output = str(result)
-            
+
             clean = main.strip_ansi_codes_jarell(output)
 
             if status == "SUCCESS":
                 successful_count += 1
                 success_out.write(f"{username}:{password} - valid\n")
-                await message.reply(clean)
             else:
                 failed_count += 1
                 fail_out.write(f"{username}:{password} - {clean}\n")
-                await message.reply(f"\u274c {username}:{password} - {clean}")
+
+            # Generate progress bar
+            progress = successful_count + failed_count
+            total = len(accounts)
+            percentage = round((progress / total) * 100)
+            filled_blocks = round(percentage / 10)
+            bar = "█" * filled_blocks + "░" * (10 - filled_blocks)
+            progress_bar = f"🔄 Progress: [{bar}] {percentage}% ({progress}/{total})"
+            account_line = f"{status} {username}:{password} - {clean}"
+
+            await message.reply(f"{progress_bar}\n{account_line}")
+
+            # Delay to reduce CAPTCHA risk
+            await asyncio.sleep(5)
 
     await message.reply(
         f"\ud83d\udcca **Bulk Check Summary:**\n"
