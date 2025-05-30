@@ -46,16 +46,19 @@ def trigger_railway_redeploy():
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "query": """
-            mutation Redeploy($projectId: String!) {
-              deployProject(input: { projectId: $projectId }) {
-                id
+            mutation TriggerRedeploy($input: TriggerRedeployInput!) {
+              triggerRedeploy(input: $input) {
+                deploymentId
               }
             }
         """,
         "variables": {
-            "projectId": project_id
+            "input": {
+                "projectId": project_id
+            }
         }
     }
 
@@ -65,6 +68,7 @@ def trigger_railway_redeploy():
         print(f"[Railway] Response: {response.text}")
     except Exception as e:
         print(f"[Railway] Failed to redeploy: {e}")
+
 
 def save_checkpoint(index, file_path):
     with open("checkpoint.json", "w") as f:
