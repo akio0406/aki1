@@ -36,8 +36,6 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 user_pending_files = {}
 
-import json
-
 def save_checkpoint(index, file_path):
     with open("checkpoint.json", "w") as f:
         json.dump({"index": index, "file_path": file_path}, f)
@@ -63,19 +61,18 @@ def has_vip_access(user_id):
     expiry_date = datetime.datetime.fromisoformat(expiry_str)
     return (expiry_date - datetime.datetime.now(datetime.timezone.utc)).days > 7
 
-# Function to check if user can use VIP command
 def can_use_vip(user_id):
     if user_id == ADMIN_ID:
         return True, None
     if not has_vip_access(user_id):
-        return False, "\ud83d\udeab You need to avail a lifetime key to use this command!"
+        return False, "🚫 You need to avail a lifetime key to use this command!"
     return True, None
 
 # Save file to download location
 async def save_file(message):
     file_message = message.reply_to_message if message.reply_to_message and message.reply_to_message.document else message if message.document else None
     if not file_message:
-        return None, "\ud83d\udeab Please send or reply to a file."
+        return None, "🚫 Please send or reply to a file."
     os.makedirs("downloads", exist_ok=True)
     file_path = f"downloads/{file_message.document.file_name}"
     await file_message.download(file_path)
@@ -95,17 +92,16 @@ async def check_file(client, message):
         await message.reply(error)
         return
 
-    await message.reply("\ud83d\udd0d Running bulk check...")
+    await message.reply("🔍 Running bulk check...")
     await bulk_check(file_path, message)
 
-# Function for bulk checking accounts
+# Bulk checking function
 async def bulk_check(file_path, message):
     user_id = message.from_user.id
     date = main.get_datenow()
     successful_count = 0
     failed_count = 0
 
-    # Load where we left off
     checkpoint = load_checkpoint()
     start_index = checkpoint["index"] if checkpoint["file_path"] == file_path else 0
 
@@ -123,7 +119,7 @@ async def bulk_check(file_path, message):
          open(success_file, 'a', encoding='utf-8') as success_out:
 
         accounts = infile.readlines()
-        await message.reply(f"📋 Loaded {len(accounts)} accounts for checking. Resuming from line {start_index + 1}.")
+        await message.reply(f"📋 Loaded {len(accounts)} accounts. Resuming from line {start_index + 1}.")
 
         for i in range(start_index, len(accounts)):
             acc = accounts[i].strip()
@@ -137,8 +133,23 @@ async def bulk_check(file_path, message):
             username, password = acc.rsplit(':', 1)
             sys.stdin = io.StringIO("\n")
 
-            # Check the account
-            result = await asyncio.to_thread(main.check_account, username, password, date)
+            try:
+                result = await asyncio.to_thread(main.check_account, username, password, date)
+            except RuntimeError as e:
+                if "CAPTCHA_DETECTED" in str(e):
+                    await message.reply("🛑 CAPTCHA detected! Saving progress and redeploying...")
+
+                    save_checkpoint(i, file_path)
+
+                    # 🚀 Trigger Railway redeploy
+                    try:
+                        requests.post("YOUR_RAILWAY_DEPLOY_HOOK_URL")  # Replace with real URL
+                    except Exception as err:
+                        await message.reply(f"⚠️ Failed to redeploy: {err}")
+
+                    os._exit(0)  # Exit for Railway to restart
+                else:
+                    raise
 
             if isinstance(result, tuple) and len(result) == 2:
                 status, output = result
@@ -157,10 +168,8 @@ async def bulk_check(file_path, message):
                 fail_out.write(f"{username}:{password} - {clean}\n")
                 await message.reply(f"❌ {username}:{password} - {clean}")
 
-            # Save progress after each account
             save_checkpoint(i + 1, file_path)
 
-    # Optional: delete checkpoint when finished
     if os.path.exists("checkpoint.json"):
         os.remove("checkpoint.json")
 
