@@ -36,6 +36,35 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 user_pending_files = {}
 
+# ✅ Redeploy Railway using GraphQL API
+def trigger_railway_redeploy():
+    token = "228d2031-4548-4804-9fdc-32390010c4f5"  # 🔐 Keep this private
+    project_id = "2e95dc6d-0e0b-4edd-8c51-5ef47df2fe2c"
+
+    url = "https://backboard.railway.app/graphql/v2"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "query": """
+            mutation Redeploy($projectId: String!) {
+              deployProject(input: { projectId: $projectId }) {
+                id
+              }
+            }
+        """,
+        "variables": {
+            "projectId": project_id
+        }
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        print(f"[Railway] Redeploy status: {response.status_code}")
+    except Exception as e:
+        print(f"[Railway] Failed to redeploy: {e}")
+
 def save_checkpoint(index, file_path):
     with open("checkpoint.json", "w") as f:
         json.dump({"index": index, "file_path": file_path}, f)
@@ -47,7 +76,6 @@ def load_checkpoint():
     except FileNotFoundError:
         return {"index": 0, "file_path": None}
 
-# Helper function to validate VIP access
 def has_vip_access(user_id):
     response = requests.get(f"{SUPABASE_URL}/rest/v1/keys?redeemed_by=eq.{user_id}", headers=SUPABASE_HEADERS)
     if response.status_code != 200:
@@ -68,7 +96,6 @@ def can_use_vip(user_id):
         return False, "🚫 You need to avail a lifetime key to use this command!"
     return True, None
 
-# Save file to download location
 async def save_file(message):
     file_message = message.reply_to_message if message.reply_to_message and message.reply_to_message.document else message if message.document else None
     if not file_message:
@@ -95,7 +122,6 @@ async def check_file(client, message):
     await message.reply("🔍 Running bulk check...")
     await bulk_check(file_path, message)
 
-# Bulk checking function
 async def bulk_check(file_path, message):
     user_id = message.from_user.id
     date = main.get_datenow()
@@ -138,16 +164,9 @@ async def bulk_check(file_path, message):
             except RuntimeError as e:
                 if "CAPTCHA_DETECTED" in str(e):
                     await message.reply("🛑 CAPTCHA detected! Saving progress and redeploying...")
-
                     save_checkpoint(i, file_path)
-
-                    # 🚀 Trigger Railway redeploy
-                    try:
-                        requests.post("YOUR_RAILWAY_DEPLOY_HOOK_URL")  # Replace with real URL
-                    except Exception as err:
-                        await message.reply(f"⚠️ Failed to redeploy: {err}")
-
-                    os._exit(0)  # Exit for Railway to restart
+                    trigger_railway_redeploy()
+                    os._exit(0)
                 else:
                     raise
 
