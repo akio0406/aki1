@@ -36,6 +36,19 @@ app = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 user_pending_files = {}
 
+import json
+
+def save_checkpoint(index, file_path):
+    with open("checkpoint.json", "w") as f:
+        json.dump({"index": index, "file_path": file_path}, f)
+
+def load_checkpoint():
+    try:
+        with open("checkpoint.json", "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"index": 0, "file_path": None}
+
 # Helper function to validate VIP access
 def has_vip_access(user_id):
     response = requests.get(f"{SUPABASE_URL}/rest/v1/keys?redeemed_by=eq.{user_id}", headers=SUPABASE_HEADERS)
@@ -92,8 +105,12 @@ async def bulk_check(file_path, message):
     successful_count = 0
     failed_count = 0
 
+    # Load where we left off
+    checkpoint = load_checkpoint()
+    start_index = checkpoint["index"] if checkpoint["file_path"] == file_path else 0
+
     if not file_path.endswith('.txt'):
-        await message.reply("\u274c Error: Provided file is not a .txt file.")
+        await message.reply("❌ Error: Provided file is not a .txt file.")
         return
 
     output_dir = "output"
@@ -106,27 +123,29 @@ async def bulk_check(file_path, message):
          open(success_file, 'a', encoding='utf-8') as success_out:
 
         accounts = infile.readlines()
-        await message.reply(f"\ud83d\udccc Loaded {len(accounts)} accounts for checking.")
+        await message.reply(f"📋 Loaded {len(accounts)} accounts for checking. Resuming from line {start_index + 1}.")
 
-        for acc in accounts:
-            acc = acc.strip()
+        for i in range(start_index, len(accounts)):
+            acc = accounts[i].strip()
+
             if ':' not in acc:
                 failed_count += 1
                 fail_out.write(f"{acc} - Invalid format\n")
-                await message.reply(f"\u274c {acc} - Invalid format")
+                await message.reply(f"❌ {acc} - Invalid format")
                 continue
 
             username, password = acc.rsplit(':', 1)
             sys.stdin = io.StringIO("\n")
-            
-            # Safely handle the return of main.check_account
+
+            # Check the account
             result = await asyncio.to_thread(main.check_account, username, password, date)
+
             if isinstance(result, tuple) and len(result) == 2:
                 status, output = result
             else:
                 status = "FAILED"
                 output = str(result)
-            
+
             clean = main.strip_ansi_codes_jarell(output)
 
             if status == "SUCCESS":
@@ -136,13 +155,20 @@ async def bulk_check(file_path, message):
             else:
                 failed_count += 1
                 fail_out.write(f"{username}:{password} - {clean}\n")
-                await message.reply(f"\u274c {username}:{password} - {clean}")
+                await message.reply(f"❌ {username}:{password} - {clean}")
+
+            # Save progress after each account
+            save_checkpoint(i + 1, file_path)
+
+    # Optional: delete checkpoint when finished
+    if os.path.exists("checkpoint.json"):
+        os.remove("checkpoint.json")
 
     await message.reply(
-        f"\ud83d\udcca **Bulk Check Summary:**\n"
-        f"\ud83d\udccc Total: {len(accounts)}\n"
-        f"\u2705 Success: {successful_count}\n"
-        f"\u274c Failed: {failed_count}"
+        f"📊 **Bulk Check Summary:**\n"
+        f"📋 Total: {len(accounts)}\n"
+        f"✅ Success: {successful_count}\n"
+        f"❌ Failed: {failed_count}"
     )
 
 app.run()
