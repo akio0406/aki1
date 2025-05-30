@@ -89,7 +89,8 @@ async def check_file(client, message):
 async def bulk_check(file_path, message):
     user_id = message.from_user.id
     date = main.get_datenow()
-    successful_count = failed_count = 0
+    successful_count = 0
+    failed_count = 0
 
     if not file_path.endswith('.txt'):
         await message.reply("\u274c Error: Provided file is not a .txt file.")
@@ -117,11 +118,10 @@ async def bulk_check(file_path, message):
 
             username, password = acc.rsplit(':', 1)
             sys.stdin = io.StringIO("\n")
-            result = await asyncio.to_thread(main.check_account, username, password, date)
+            status, result = await asyncio.to_thread(main.check_account, username, password, date)
             clean = main.strip_ansi_codes_jarell(result)
-            print(f"[DEBUG] Result: {clean}")
 
-            if "[+]" in clean:
+            if status == "SUCCESS":
                 successful_count += 1
                 success_out.write(f"{username}:{password} - valid\n")
                 await message.reply(clean)
