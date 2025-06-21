@@ -1,1 +1,1 @@
-worker: python checker.py
+web: python live_server.py
