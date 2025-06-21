@@ -1,17 +1,36 @@
-import os
-import asyncio, json, websockets
+import json
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
-PORT = int(os.environ.get("PORT", 8765))
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-clients = set()
-async def handler(ws, path):
-    clients.add(ws)
-    try: await ws.wait_closed()
-    finally: clients.remove(ws)
+clients: list[WebSocket] = []
 
-async def main():
-    async with websockets.serve(handler, "0.0.0.0", PORT):
-        await asyncio.Future()
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    await ws.accept()
+    clients.append(ws)
+    try:
+        while True:
+            await ws.receive_text()   # just keep alive
+    except WebSocketDisconnect:
+        clients.remove(ws)
 
-if __name__=="__main__":
-    asyncio.run(main())
+@app.post("/push")
+async def push_line(payload: dict):
+    line = payload.get("line")
+    if not line:
+        return {"error": "no line provided"}
+    msg = json.dumps({"line": line})
+    for ws in clients[:]:
+        try:
+            await ws.send_text(msg)
+        except:
+            clients.remove(ws)
+    return {"status": "ok"}
